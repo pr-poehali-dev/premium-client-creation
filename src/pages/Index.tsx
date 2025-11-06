@@ -2,11 +2,18 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 
 const Index = () => {
   const [snowEnabled, setSnowEnabled] = useState(false);
   const [snowflakes, setSnowflakes] = useState<Array<{ id: number; left: number; animationDuration: number; opacity: number }>>([]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: string } | null>(null);
 
   useEffect(() => {
     if (snowEnabled) {
@@ -24,6 +31,25 @@ const Index = () => {
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleBuyClick = (planName: string, price: string) => {
+    setSelectedPlan({ name: planName, price });
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSelect = (method: string) => {
+    const urls: Record<string, string> = {
+      'YouMoney': 'https://yoomoney.ru/to/+bnDMvX7Ko67VDCR7RJECkb6',
+      'YouCassa': 'https://yookassa.ru/',
+      'PSP': 'https://psp.ru/',
+      'Sber': 'https://www.sberbank.ru/',
+      'TBank': 'https://www.tbank.ru/',
+      'Крипта': 'https://www.binance.com/'
+    };
+    if (urls[method]) {
+      window.open(urls[method], '_blank');
+    }
   };
 
   return (
@@ -46,11 +72,13 @@ const Index = () => {
         <Button 
           variant="ghost" 
           className="glass-effect text-white hover:bg-white/10"
+          onClick={() => setShowLoginModal(true)}
         >
           Войти
         </Button>
         <Button 
           className="glass-effect bg-primary/80 hover:bg-primary text-white glow-effect"
+          onClick={() => setShowRegisterModal(true)}
         >
           Создать аккаунт
         </Button>
@@ -168,7 +196,10 @@ const Index = () => {
                   <p>• Это 7 дней в удовольствие</p>
                 </div>
               </div>
-              <Button className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl mt-4">
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl mt-4"
+                onClick={() => handleBuyClick('Неделя', '100₽')}
+              >
                 Купить
               </Button>
             </Card>
@@ -184,7 +215,10 @@ const Index = () => {
                   <p>• Это 30 дней в удовольствие</p>
                 </div>
               </div>
-              <Button className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl mt-4">
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl mt-4"
+                onClick={() => handleBuyClick('Месяц', '200₽')}
+              >
                 Купить
               </Button>
             </Card>
@@ -200,7 +234,10 @@ const Index = () => {
                   <p>• Это 365 дней в удовольствие</p>
                 </div>
               </div>
-              <Button className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl mt-4">
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl mt-4"
+                onClick={() => handleBuyClick('Год', '350₽')}
+              >
                 Купить
               </Button>
             </Card>
@@ -218,7 +255,10 @@ const Index = () => {
                   <p>• Это навсегда в удовольствие</p>
                 </div>
               </div>
-              <Button className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl mt-4">
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl mt-4"
+                onClick={() => handleBuyClick('Навсегда', '500₽')}
+              >
                 Купить
               </Button>
             </Card>
@@ -229,6 +269,113 @@ const Index = () => {
       <footer className="py-8 text-center text-gray-500">
         <p>© 2024 AstrixClient. Все права защищены.</p>
       </footer>
+
+      <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+        <DialogContent className="glass-effect border-secondary/20 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center">Вход в аккаунт</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <Label htmlFor="login-username" className="text-gray-300">Логин</Label>
+              <Input 
+                id="login-username" 
+                placeholder="Введите логин" 
+                className="bg-black/40 border-secondary/30 text-white mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="login-password" className="text-gray-300">Пароль</Label>
+              <Input 
+                id="login-password" 
+                type="password" 
+                placeholder="Введите пароль" 
+                className="bg-black/40 border-secondary/30 text-white mt-2"
+              />
+            </div>
+            <Button className="w-full bg-primary hover:bg-primary/90 text-white">
+              Войти
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRegisterModal} onOpenChange={setShowRegisterModal}>
+        <DialogContent className="glass-effect border-secondary/20 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center">Регистрация</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <Label htmlFor="register-email" className="text-gray-300">Email</Label>
+              <Input 
+                id="register-email" 
+                type="email" 
+                placeholder="Введите Email" 
+                className="bg-black/40 border-secondary/30 text-white mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="register-username" className="text-gray-300">Логин</Label>
+              <Input 
+                id="register-username" 
+                placeholder="Введите логин" 
+                className="bg-black/40 border-secondary/30 text-white mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="register-password" className="text-gray-300">Пароль</Label>
+              <Input 
+                id="register-password" 
+                type="password" 
+                placeholder="Введите пароль" 
+                className="bg-black/40 border-secondary/30 text-white mt-2"
+              />
+            </div>
+            <Button className="w-full bg-primary hover:bg-primary/90 text-white">
+              Зарегистрироваться
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+        <DialogContent className="glass-effect border-secondary/20 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center">Оплата подписки</DialogTitle>
+            {selectedPlan && (
+              <p className="text-center text-gray-400 mt-2">
+                Тариф: {selectedPlan.name} — {selectedPlan.price}
+              </p>
+            )}
+          </DialogHeader>
+          <div className="space-y-6 pt-4">
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-center">Выберите способ оплаты</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {['YouMoney', 'YouCassa', 'PSP', 'Sber', 'TBank', 'Крипта'].map((method) => (
+                  <Button
+                    key={method}
+                    onClick={() => handlePaymentSelect(method)}
+                    className="glass-effect border border-secondary/30 hover:bg-secondary/20 text-white h-20"
+                    variant="outline"
+                  >
+                    {method}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="promo" className="text-gray-300">Промокод (если у вас есть)</Label>
+              <Input 
+                id="promo" 
+                placeholder="Введите промокод" 
+                className="bg-black/40 border-secondary/30 text-white mt-2"
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
