@@ -13,11 +13,14 @@ const Index = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: string } | null>(null);
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [registerData, setRegisterData] = useState({ email: '', username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (snowEnabled) {
@@ -32,6 +35,13 @@ const Index = () => {
       setSnowflakes([]);
     }
   }, [snowEnabled]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -68,8 +78,9 @@ const Index = () => {
       const data = await response.json();
       if (data.success) {
         localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(data.user);
         setShowLoginModal(false);
-        alert('Вход выполнен успешно!');
+        setLoginData({ username: '', password: '' });
       } else {
         setError(data.error || 'Ошибка входа');
       }
@@ -92,8 +103,9 @@ const Index = () => {
       const data = await response.json();
       if (data.success) {
         localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(data.user);
         setShowRegisterModal(false);
-        alert('Регистрация прошла успешно!');
+        setRegisterData({ email: '', username: '', password: '' });
       } else {
         setError(data.error || 'Ошибка регистрации');
       }
@@ -104,8 +116,15 @@ const Index = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setUser(null);
+    setShowProfileModal(false);
+  };
+
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="min-h-screen text-white relative overflow-hidden">
+      <div className="gradient-bg" />
       {snowflakes.map((flake) => (
         <div
           key={flake.id}
@@ -121,19 +140,31 @@ const Index = () => {
       ))}
 
       <header className="fixed top-0 right-0 p-6 z-50 flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          className="glass-effect text-white hover:bg-white/10"
-          onClick={() => setShowLoginModal(true)}
-        >
-          Войти
-        </Button>
-        <Button 
-          className="glass-effect bg-primary/80 hover:bg-primary text-white glow-effect"
-          onClick={() => setShowRegisterModal(true)}
-        >
-          Создать аккаунт
-        </Button>
+        {user ? (
+          <Button 
+            className="glass-effect bg-primary/80 hover:bg-primary text-white glow-effect"
+            onClick={() => setShowProfileModal(true)}
+          >
+            <Icon name="User" size={20} className="mr-2" />
+            Личный кабинет
+          </Button>
+        ) : (
+          <>
+            <Button 
+              variant="ghost" 
+              className="glass-effect text-white hover:bg-white/10"
+              onClick={() => setShowLoginModal(true)}
+            >
+              Войти
+            </Button>
+            <Button 
+              className="glass-effect bg-primary/80 hover:bg-primary text-white glow-effect"
+              onClick={() => setShowRegisterModal(true)}
+            >
+              Создать аккаунт
+            </Button>
+          </>
+        )}
       </header>
 
       <section className="min-h-screen flex flex-col items-center justify-center px-4 relative">
@@ -445,6 +476,64 @@ const Index = () => {
                 className="bg-black/40 border-secondary/30 text-white mt-2"
               />
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
+        <DialogContent className="glass-effect border-secondary/20 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center">Личный кабинет</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 pt-4">
+            <div className="glass-effect p-4 rounded-xl border border-secondary/20">
+              <Label className="text-gray-400 text-sm">UID</Label>
+              <p className="text-white font-mono mt-1">{user?.uid}</p>
+            </div>
+            
+            <div className="glass-effect p-4 rounded-xl border border-secondary/20">
+              <Label className="text-gray-400 text-sm">Email</Label>
+              <p className="text-white mt-1">{user?.email}</p>
+            </div>
+            
+            <div className="glass-effect p-4 rounded-xl border border-secondary/20">
+              <Label className="text-gray-400 text-sm">Логин</Label>
+              <p className="text-white mt-1">{user?.username}</p>
+            </div>
+            
+            <div className="glass-effect p-4 rounded-xl border border-secondary/20">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-gray-400 text-sm">Пароль</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-secondary hover:text-secondary/80"
+                >
+                  <Icon name={showPassword ? 'EyeOff' : 'Eye'} size={16} />
+                </Button>
+              </div>
+              <p className="text-white font-mono">
+                {showPassword ? '********' : '••••••••'}
+              </p>
+            </div>
+            
+            <div className="glass-effect p-4 rounded-xl border border-secondary/20">
+              <Label className="text-gray-400 text-sm">Подписка действительна до</Label>
+              <p className="text-white mt-1">
+                {user?.subscription_expires_at 
+                  ? new Date(user.subscription_expires_at).toLocaleDateString('ru-RU')
+                  : 'Нет активной подписки'}
+              </p>
+            </div>
+
+            <Button 
+              className="w-full bg-primary/20 hover:bg-primary/30 text-white border border-primary"
+              onClick={handleLogout}
+            >
+              <Icon name="LogOut" size={16} className="mr-2" />
+              Выйти из аккаунта
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
