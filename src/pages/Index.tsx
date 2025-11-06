@@ -14,6 +14,10 @@ const Index = () => {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: string } | null>(null);
+  const [loginData, setLoginData] = useState({ username: '', password: '' });
+  const [registerData, setRegisterData] = useState({ email: '', username: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (snowEnabled) {
@@ -49,6 +53,54 @@ const Index = () => {
     };
     if (urls[method]) {
       window.open(urls[method], '_blank');
+    }
+  };
+
+  const handleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const response = await fetch('https://functions.poehali.dev/3718aa2b-1f2e-4867-9c76-73ff8a9d5d2c', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', ...loginData })
+      });
+      const data = await response.json();
+      if (data.success) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setShowLoginModal(false);
+        alert('Вход выполнен успешно!');
+      } else {
+        setError(data.error || 'Ошибка входа');
+      }
+    } catch (err) {
+      setError('Ошибка соединения с сервером');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const response = await fetch('https://functions.poehali.dev/3718aa2b-1f2e-4867-9c76-73ff8a9d5d2c', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register', ...registerData })
+      });
+      const data = await response.json();
+      if (data.success) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setShowRegisterModal(false);
+        alert('Регистрация прошла успешно!');
+      } else {
+        setError(data.error || 'Ошибка регистрации');
+      }
+    } catch (err) {
+      setError('Ошибка соединения с сервером');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -190,10 +242,10 @@ const Index = () => {
                 <h3 className="text-3xl font-bold text-center mb-4 text-white">Неделя</h3>
                 <p className="text-5xl font-bold text-center text-primary mb-6">100₽</p>
                 <div className="space-y-3 text-gray-400">
-                  <p>При покупке подписки на неделю вы получите:</p>
-                  <p>• Все функции клиента</p>
-                  <p>• Подписку на 7 дней</p>
-                  <p>• Это 7 дней в удовольствие</p>
+                  <p>• Полный доступ ко всем функциям</p>
+                  <p>• Идеально для пробы клиента</p>
+                  <p>• Техподдержка 24/7</p>
+                  <p>• Обновления включены</p>
                 </div>
               </div>
               <Button 
@@ -209,10 +261,10 @@ const Index = () => {
                 <h3 className="text-3xl font-bold text-center mb-4 text-white">Месяц</h3>
                 <p className="text-5xl font-bold text-center text-primary mb-6">200₽</p>
                 <div className="space-y-3 text-gray-400">
-                  <p>При покупке подписки на месяц вы получите:</p>
-                  <p>• Все функции клиента</p>
-                  <p>• Подписку на 30 дней</p>
-                  <p>• Это 30 дней в удовольствие</p>
+                  <p>• Все функции + приоритет в поддержке</p>
+                  <p>• Ранний доступ к новым фичам</p>
+                  <p>• Персональные настройки</p>
+                  <p>• Скидка 33% к недельному тарифу</p>
                 </div>
               </div>
               <Button 
@@ -228,10 +280,10 @@ const Index = () => {
                 <h3 className="text-3xl font-bold text-center mb-4 text-white">Год</h3>
                 <p className="text-5xl font-bold text-center text-primary mb-6">350₽</p>
                 <div className="space-y-3 text-gray-400">
-                  <p>При покупке подписки на год вы получите:</p>
-                  <p>• Все функции клиента</p>
-                  <p>• Подписку на 365 дней</p>
-                  <p>• Это 365 дней в удовольствие</p>
+                  <p>• VIP-статус и эксклюзивные скины</p>
+                  <p>• Бесплатные крупные обновления</p>
+                  <p>• Личный менеджер поддержки</p>
+                  <p>• Максимальная выгода — 71% экономии</p>
                 </div>
               </div>
               <Button 
@@ -249,10 +301,10 @@ const Index = () => {
                 <h3 className="text-3xl font-bold text-center mb-4 text-white">Навсегда</h3>
                 <p className="text-5xl font-bold text-center text-primary mb-6">500₽</p>
                 <div className="space-y-3 text-gray-400">
-                  <p>При покупке навсегда вы получите:</p>
-                  <p>• Все функции клиента</p>
-                  <p>• Бессрочную подписку</p>
-                  <p>• Это навсегда в удовольствие</p>
+                  <p>• Бессрочный доступ без продлений</p>
+                  <p>• Все будущие обновления бесплатно</p>
+                  <p>• Легендарный статус в сообществе</p>
+                  <p>• Единоразовая оплата = вечный доступ</p>
                 </div>
               </div>
               <Button 
@@ -276,12 +328,15 @@ const Index = () => {
             <DialogTitle className="text-2xl font-bold text-center">Вход в аккаунт</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {error && <p className="text-red-400 text-center">{error}</p>}
             <div>
               <Label htmlFor="login-username" className="text-gray-300">Логин</Label>
               <Input 
                 id="login-username" 
                 placeholder="Введите логин" 
                 className="bg-black/40 border-secondary/30 text-white mt-2"
+                value={loginData.username}
+                onChange={(e) => setLoginData({...loginData, username: e.target.value})}
               />
             </div>
             <div>
@@ -291,10 +346,16 @@ const Index = () => {
                 type="password" 
                 placeholder="Введите пароль" 
                 className="bg-black/40 border-secondary/30 text-white mt-2"
+                value={loginData.password}
+                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
               />
             </div>
-            <Button className="w-full bg-primary hover:bg-primary/90 text-white">
-              Войти
+            <Button 
+              className="w-full bg-primary hover:bg-primary/90 text-white"
+              onClick={handleLogin}
+              disabled={loading}
+            >
+              {loading ? 'Вход...' : 'Войти'}
             </Button>
           </div>
         </DialogContent>
@@ -306,6 +367,7 @@ const Index = () => {
             <DialogTitle className="text-2xl font-bold text-center">Регистрация</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {error && <p className="text-red-400 text-center">{error}</p>}
             <div>
               <Label htmlFor="register-email" className="text-gray-300">Email</Label>
               <Input 
@@ -313,6 +375,8 @@ const Index = () => {
                 type="email" 
                 placeholder="Введите Email" 
                 className="bg-black/40 border-secondary/30 text-white mt-2"
+                value={registerData.email}
+                onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
               />
             </div>
             <div>
@@ -321,6 +385,8 @@ const Index = () => {
                 id="register-username" 
                 placeholder="Введите логин" 
                 className="bg-black/40 border-secondary/30 text-white mt-2"
+                value={registerData.username}
+                onChange={(e) => setRegisterData({...registerData, username: e.target.value})}
               />
             </div>
             <div>
@@ -330,10 +396,16 @@ const Index = () => {
                 type="password" 
                 placeholder="Введите пароль" 
                 className="bg-black/40 border-secondary/30 text-white mt-2"
+                value={registerData.password}
+                onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
               />
             </div>
-            <Button className="w-full bg-primary hover:bg-primary/90 text-white">
-              Зарегистрироваться
+            <Button 
+              className="w-full bg-primary hover:bg-primary/90 text-white"
+              onClick={handleRegister}
+              disabled={loading}
+            >
+              {loading ? 'Регистрация...' : 'Зарегистрироваться'}
             </Button>
           </div>
         </DialogContent>
