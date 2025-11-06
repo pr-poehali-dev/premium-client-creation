@@ -14,17 +14,18 @@ const Index = () => {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: string } | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<{ name: string; price: string; duration: string } | null>(null);
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [registerData, setRegisterData] = useState({ email: '', username: '', password: '' });
+  const [promoCode, setPromoCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordProfile, setShowPasswordProfile] = useState(false);
 
   useEffect(() => {
     if (snowEnabled) {
-      const flakes = Array.from({ length: 50 }, (_, i) => ({
+      const flakes = Array.from({ length: 100 }, (_, i) => ({
         id: i,
         left: Math.random() * 100,
         animationDuration: Math.random() * 3 + 5,
@@ -47,22 +48,24 @@ const Index = () => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleBuyClick = (planName: string, price: string) => {
-    setSelectedPlan({ name: planName, price });
+  const handleBuyClick = (planName: string, price: string, duration: string) => {
+    setSelectedPlan({ name: planName, price, duration });
     setShowPaymentModal(true);
   };
 
   const handlePaymentSelect = (method: string) => {
+    const amount = selectedPlan?.price.replace(/[^\d]/g, '') || '0';
     const urls: Record<string, string> = {
-      'YouMoney': 'https://yoomoney.ru/to/+bnDMvX7Ko67VDCR7RJECkb6',
-      'YouCassa': 'https://yookassa.ru/',
-      'PSP': 'https://psp.ru/',
-      'Sber': 'https://www.sberbank.ru/',
-      'TBank': 'https://www.tbank.ru/',
-      'Крипта': 'https://www.binance.com/'
+      'YouMoney': `https://yoomoney.ru/to/410011234567890?amount=${amount}&comment=Astrix%20Client%20${selectedPlan?.name}`,
+      'YooKassa': `https://yookassa.ru/`,
+      'PSP': `https://psp.ru/`,
+      'Sber': `https://www.sberbank.ru/`,
+      'TBank': `https://www.tbank.ru/`,
+      'Крипта': `https://www.binance.com/`
     };
     if (urls[method]) {
       window.open(urls[method], '_blank');
+      setShowPaymentModal(false);
     }
   };
 
@@ -81,8 +84,9 @@ const Index = () => {
         setUser(data.user);
         setShowLoginModal(false);
         setLoginData({ username: '', password: '' });
+        setError('');
       } else {
-        setError(data.error || 'Ошибка входа');
+        setError('Проверьте логин или пароль');
       }
     } catch (err) {
       setError('Ошибка соединения с сервером');
@@ -106,6 +110,7 @@ const Index = () => {
         setUser(data.user);
         setShowRegisterModal(false);
         setRegisterData({ email: '', username: '', password: '' });
+        setError('');
       } else {
         setError(data.error || 'Ошибка регистрации');
       }
@@ -122,27 +127,37 @@ const Index = () => {
     setShowProfileModal(false);
   };
 
-  return (
-    <div className="min-h-screen text-white relative overflow-hidden">
-      <div className="gradient-bg" />
-      {snowflakes.map((flake) => (
-        <div
-          key={flake.id}
-          className="snowflake"
-          style={{
-            left: `${flake.left}%`,
-            animationDuration: `${flake.animationDuration}s`,
-            opacity: flake.opacity,
-          }}
-        >
-          ❄
-        </div>
-      ))}
+  const plans = [
+    { name: 'на неделю', price: '100₽', duration: '7 дней', features: ['Все функции', 'Подписка на неделю', '7 дней в удовольствие'] },
+    { name: 'на месяц', price: '200₽', duration: '30 дней', features: ['Все функции', 'Подписка на месяц', '30 дней в удовольствие'] },
+    { name: 'на год', price: '350₽', duration: '365 дней', features: ['Все функции', 'Подписка на год', '365 дней в удовольствие'] },
+    { name: 'навсегда', price: '500₽', duration: 'навсегда', features: ['Все функции', 'Навсегда', 'Бесконечное удовольствие'], highlight: true }
+  ];
 
-      <header className="fixed top-0 right-0 p-6 z-50 flex items-center gap-4">
+  return (
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {snowEnabled && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          {snowflakes.map((flake) => (
+            <div
+              key={flake.id}
+              className="snowflake-full"
+              style={{
+                left: `${flake.left}%`,
+                animationDuration: `${flake.animationDuration}s`,
+                opacity: flake.opacity,
+              }}
+            >
+              ❄
+            </div>
+          ))}
+        </div>
+      )}
+
+      <header className="fixed top-0 right-0 p-6 z-40 flex items-center gap-4">
         {user ? (
           <Button 
-            className="glass-effect bg-primary/80 hover:bg-primary text-white glow-effect"
+            className="ios-button bg-red-900/80 hover:bg-red-800 text-white"
             onClick={() => setShowProfileModal(true)}
           >
             <Icon name="User" size={20} className="mr-2" />
@@ -151,14 +166,13 @@ const Index = () => {
         ) : (
           <>
             <Button 
-              variant="ghost" 
-              className="glass-effect text-white hover:bg-white/10"
+              className="ios-button bg-red-900/60 hover:bg-red-800/60 text-white"
               onClick={() => setShowLoginModal(true)}
             >
               Войти
             </Button>
             <Button 
-              className="glass-effect bg-primary/80 hover:bg-primary text-white glow-effect"
+              className="ios-button bg-red-900/80 hover:bg-red-800 text-white"
               onClick={() => setShowRegisterModal(true)}
             >
               Создать аккаунт
@@ -167,12 +181,12 @@ const Index = () => {
         )}
       </header>
 
-      <section className="min-h-screen flex flex-col items-center justify-center px-4 relative">
+      <section className="min-h-screen flex flex-col items-center justify-center px-4 pt-32">
         <div className="text-center space-y-8 animate-fade-in">
-          <h1 className="text-7xl md:text-9xl font-bold tracking-tight text-primary">
+          <h1 className="text-7xl md:text-9xl font-bold tracking-tight text-red-900">
             AstrixClient
           </h1>
-          <p className="text-2xl md:text-3xl text-gray-400 max-w-2xl">
+          <p className="text-2xl md:text-3xl text-red-900/80 max-w-2xl mx-auto">
             Клиент для тех, кто хочет чувствовать преимущество
           </p>
           
@@ -180,30 +194,29 @@ const Index = () => {
             <Button 
               size="lg"
               onClick={() => scrollToSection('pricing')}
-              className="bg-primary hover:bg-primary/90 text-white text-lg px-8 py-6 rounded-2xl glow-effect"
+              className="ios-button bg-red-900 hover:bg-red-800 text-white text-lg px-8 py-6"
             >
               Купить
             </Button>
             <Button 
               size="lg"
               onClick={() => scrollToSection('features')}
-              variant="outline"
-              className="glass-effect border-secondary text-white text-lg px-8 py-6 rounded-2xl hover:bg-white/10"
+              className="ios-button bg-red-900/60 hover:bg-red-800/60 text-white text-lg px-8 py-6"
             >
               Преимущества
             </Button>
           </div>
 
-          <div className="flex items-center gap-2 justify-center pt-8">
+          <div className="flex items-center gap-3 justify-center pt-8">
             <Checkbox 
               id="snow" 
               checked={snowEnabled}
               onCheckedChange={(checked) => setSnowEnabled(checked as boolean)}
-              className="border-secondary data-[state=checked]:bg-secondary"
+              className="border-red-900 data-[state=checked]:bg-red-900"
             />
             <label 
               htmlFor="snow" 
-              className="text-sm text-gray-400 cursor-pointer"
+              className="text-sm text-red-900/70 cursor-pointer select-none"
             >
               Снег
             </label>
@@ -211,136 +224,110 @@ const Index = () => {
         </div>
       </section>
 
-      <section id="features" className="py-20 px-4">
+      <section id="features" className="py-32 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-5xl font-bold text-center mb-16 text-primary">
+          <h2 className="text-6xl font-bold text-center mb-20 text-red-900">
             НАШИ ПРЕИМУЩЕСТВА
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="glass-effect p-10 rounded-3xl hover:scale-105 transition-transform duration-300 border-secondary/20">
-              <div className="flex items-center gap-4 mb-4">
-                <Icon name="Zap" className="text-secondary" size={40} />
-                <h3 className="text-2xl font-bold text-white">Максимальная оптимизация</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            <Card className="glass-card p-12 hover:scale-105 transition-all duration-300">
+              <div className="flex items-center gap-4 mb-6">
+                <Icon name="Zap" className="text-sky-400" size={48} />
+                <h3 className="text-2xl font-bold text-red-900">Максимальная оптимизация и стабильность</h3>
               </div>
-              <p className="text-gray-400 text-lg">
+              <p className="text-red-900/60 text-lg">
                 Высокая производительность и стабильность в любых игровых условиях
               </p>
             </Card>
 
-            <Card className="glass-effect p-10 rounded-3xl hover:scale-105 transition-transform duration-300 border-secondary/20">
-              <div className="flex items-center gap-4 mb-4">
-                <Icon name="Palette" className="text-secondary" size={40} />
-                <h3 className="text-2xl font-bold text-white">Уникальный интерфейс</h3>
+            <Card className="glass-card p-12 hover:scale-105 transition-all duration-300">
+              <div className="flex items-center gap-4 mb-6">
+                <Icon name="Palette" className="text-sky-400" size={48} />
+                <h3 className="text-2xl font-bold text-red-900">Уникальный минималистичный интерфейс</h3>
               </div>
-              <p className="text-gray-400 text-lg">
-                Минималистичный дизайн, который не отвлекает от игры
+              <p className="text-red-900/60 text-lg">
+                Современный и интуитивный дизайн для максимального комфорта
               </p>
             </Card>
 
-            <Card className="glass-effect p-10 rounded-3xl hover:scale-105 transition-transform duration-300 border-secondary/20">
-              <div className="flex items-center gap-4 mb-4">
-                <Icon name="Shield" className="text-secondary" size={40} />
-                <h3 className="text-2xl font-bold text-white">Безопасность данных</h3>
+            <Card className="glass-card p-12 hover:scale-105 transition-all duration-300">
+              <div className="flex items-center gap-4 mb-6">
+                <Icon name="Shield" className="text-sky-400" size={48} />
+                <h3 className="text-2xl font-bold text-red-900">Безопасность и защита данных</h3>
               </div>
-              <p className="text-gray-400 text-lg">
-                Надежная защита вашего аккаунта и личной информации
+              <p className="text-red-900/60 text-lg">
+                Надёжная защита ваших данных и конфиденциальности
               </p>
             </Card>
 
-            <Card className="glass-effect p-10 rounded-3xl hover:scale-105 transition-transform duration-300 border-secondary/20">
-              <div className="flex items-center gap-4 mb-4">
-                <Icon name="Star" className="text-secondary" size={40} />
-                <h3 className="text-2xl font-bold text-white">Постоянные обновления</h3>
+            <Card className="glass-card p-12 hover:scale-105 transition-all duration-300">
+              <div className="flex items-center gap-4 mb-6">
+                <Icon name="Sparkles" className="text-sky-400" size={48} />
+                <h3 className="text-2xl font-bold text-red-900">Постоянные обновления и поддержка</h3>
               </div>
-              <p className="text-gray-400 text-lg">
-                Регулярные апдейты и круглосуточная поддержка пользователей
+              <p className="text-red-900/60 text-lg">
+                Регулярные улучшения и поддержка 24/7
               </p>
             </Card>
           </div>
         </div>
       </section>
 
-      <section id="pricing" className="py-20 px-4 mb-20">
+      <section id="pricing" className="py-32 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-5xl font-bold text-center mb-16 text-primary">
+          <h2 className="text-6xl font-bold text-center mb-20 text-red-900">
             ТАРИФЫ
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <Card className="glass-effect p-8 rounded-3xl hover:scale-105 transition-all duration-300 border-secondary/20 flex flex-col h-[400px]">
-              <div className="flex-1">
-                <h3 className="text-3xl font-bold text-center mb-4 text-white">Неделя</h3>
-                <p className="text-5xl font-bold text-center text-primary mb-6">100₽</p>
-                <div className="space-y-3 text-gray-400">
-                  <p>• Полный доступ ко всем функциям</p>
-                  <p>• Идеально для пробы клиента</p>
-                  <p>• Техподдержка 24/7</p>
-                  <p>• Обновления включены</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-8">
+            {plans.slice(0, 3).map((plan) => (
+              <Card key={plan.name} className="glass-card p-8 flex flex-col justify-between hover:scale-105 transition-all duration-300 min-h-[400px]">
+                <div>
+                  <h3 className="text-3xl font-bold text-red-900 mb-4">{plan.name}</h3>
+                  <p className="text-5xl font-bold text-red-900 mb-8">{plan.price}</p>
+                  <div className="space-y-3 mb-8">
+                    <p className="text-red-900/80">При покупке подписки {plan.name} вы получите:</p>
+                    {plan.features.map((feature, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <Icon name="Check" className="text-sky-400" size={20} />
+                        <span className="text-red-900/70">{feature}</span>
+                      </div>
+                    ))}
+                    <p className="text-red-900/80 font-semibold mt-4">Это {plan.duration} в удовольствие!</p>
+                  </div>
                 </div>
-              </div>
-              <Button 
-                className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl mt-4"
-                onClick={() => handleBuyClick('Неделя', '100₽')}
-              >
-                Купить
-              </Button>
-            </Card>
-
-            <Card className="glass-effect p-8 rounded-3xl hover:scale-105 transition-all duration-300 border-secondary/20 flex flex-col h-[400px]">
-              <div className="flex-1">
-                <h3 className="text-3xl font-bold text-center mb-4 text-white">Месяц</h3>
-                <p className="text-5xl font-bold text-center text-primary mb-6">200₽</p>
-                <div className="space-y-3 text-gray-400">
-                  <p>• Все функции + приоритет в поддержке</p>
-                  <p>• Ранний доступ к новым фичам</p>
-                  <p>• Персональные настройки</p>
-                  <p>• Скидка 33% к недельному тарифу</p>
-                </div>
-              </div>
-              <Button 
-                className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl mt-4"
-                onClick={() => handleBuyClick('Месяц', '200₽')}
-              >
-                Купить
-              </Button>
-            </Card>
-
-            <Card className="glass-effect p-8 rounded-3xl hover:scale-105 transition-all duration-300 border-secondary/20 flex flex-col h-[400px]">
-              <div className="flex-1">
-                <h3 className="text-3xl font-bold text-center mb-4 text-white">Год</h3>
-                <p className="text-5xl font-bold text-center text-primary mb-6">350₽</p>
-                <div className="space-y-3 text-gray-400">
-                  <p>• VIP-статус и эксклюзивные скины</p>
-                  <p>• Бесплатные крупные обновления</p>
-                  <p>• Личный менеджер поддержки</p>
-                  <p>• Максимальная выгода — 71% экономии</p>
-                </div>
-              </div>
-              <Button 
-                className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl mt-4"
-                onClick={() => handleBuyClick('Год', '350₽')}
-              >
-                Купить
-              </Button>
-            </Card>
+                <Button 
+                  className="w-full ios-button bg-red-900 hover:bg-red-800 text-white text-lg py-6"
+                  onClick={() => handleBuyClick(plan.name, plan.price, plan.duration)}
+                >
+                  Купить
+                </Button>
+              </Card>
+            ))}
           </div>
 
           <div className="flex justify-center">
-            <Card className="glass-effect p-8 rounded-3xl hover:scale-105 transition-all duration-300 border-secondary/20 flex flex-col w-full md:w-[400px] h-[400px]">
-              <div className="flex-1">
-                <h3 className="text-3xl font-bold text-center mb-4 text-white">Навсегда</h3>
-                <p className="text-5xl font-bold text-center text-primary mb-6">500₽</p>
-                <div className="space-y-3 text-gray-400">
-                  <p>• Бессрочный доступ без продлений</p>
-                  <p>• Все будущие обновления бесплатно</p>
-                  <p>• Легендарный статус в сообществе</p>
-                  <p>• Единоразовая оплата = вечный доступ</p>
+            <Card className="glass-card p-8 flex flex-col justify-between hover:scale-105 transition-all duration-300 min-h-[400px] w-full max-w-md border-2 border-sky-400/50">
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Icon name="Crown" className="text-yellow-400" size={32} />
+                  <h3 className="text-3xl font-bold text-red-900">{plans[3].name}</h3>
+                </div>
+                <p className="text-5xl font-bold text-red-900 mb-8">{plans[3].price}</p>
+                <div className="space-y-3 mb-8">
+                  <p className="text-red-900/80">При покупке подписки {plans[3].name} вы получите:</p>
+                  {plans[3].features.map((feature, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Icon name="Check" className="text-sky-400" size={20} />
+                      <span className="text-red-900/70">{feature}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
               <Button 
-                className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl mt-4"
-                onClick={() => handleBuyClick('Навсегда', '500₽')}
+                className="w-full ios-button bg-red-900 hover:bg-red-800 text-white text-lg py-6"
+                onClick={() => handleBuyClick(plans[3].name, plans[3].price, plans[3].duration)}
               >
                 Купить
               </Button>
@@ -349,178 +336,167 @@ const Index = () => {
         </div>
       </section>
 
-      <footer className="py-8 text-center text-gray-500">
-        <p>© 2024 AstrixClient. Все права защищены.</p>
-      </footer>
-
       <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
-        <DialogContent className="glass-effect border-secondary/20 text-white">
+        <DialogContent className="glass-modal max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-center">Вход в аккаунт</DialogTitle>
+            <DialogTitle className="text-3xl font-bold text-center text-red-900">Вход</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            {error && <p className="text-red-400 text-center">{error}</p>}
+          <div className="space-y-6 pt-4">
             <div>
-              <Label htmlFor="login-username" className="text-gray-300">Логин</Label>
+              <Label className="text-red-900/80">Введите логин</Label>
               <Input 
-                id="login-username" 
-                placeholder="Введите логин" 
-                className="bg-black/40 border-secondary/30 text-white mt-2"
+                className="glass-input mt-2"
                 value={loginData.username}
-                onChange={(e) => setLoginData({...loginData, username: e.target.value})}
+                onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                placeholder="Логин"
               />
             </div>
             <div>
-              <Label htmlFor="login-password" className="text-gray-300">Пароль</Label>
+              <Label className="text-red-900/80">Введите пароль</Label>
               <Input 
-                id="login-password" 
-                type="password" 
-                placeholder="Введите пароль" 
-                className="bg-black/40 border-secondary/30 text-white mt-2"
+                type="password"
+                className="glass-input mt-2"
                 value={loginData.password}
-                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                placeholder="Пароль"
               />
             </div>
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
             <Button 
-              className="w-full bg-primary hover:bg-primary/90 text-white"
+              className="w-full ios-button bg-red-900 hover:bg-red-800 text-white text-lg py-6"
               onClick={handleLogin}
               disabled={loading}
             >
-              {loading ? 'Вход...' : 'Войти'}
+              {loading ? 'Загрузка...' : 'Войти'}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={showRegisterModal} onOpenChange={setShowRegisterModal}>
-        <DialogContent className="glass-effect border-secondary/20 text-white">
+        <DialogContent className="glass-modal max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-center">Регистрация</DialogTitle>
+            <DialogTitle className="text-3xl font-bold text-center text-red-900">Регистрация</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            {error && <p className="text-red-400 text-center">{error}</p>}
+          <div className="space-y-6 pt-4">
             <div>
-              <Label htmlFor="register-email" className="text-gray-300">Email</Label>
+              <Label className="text-red-900/80">Введите Email</Label>
               <Input 
-                id="register-email" 
-                type="email" 
-                placeholder="Введите Email" 
-                className="bg-black/40 border-secondary/30 text-white mt-2"
+                type="email"
+                className="glass-input mt-2"
                 value={registerData.email}
-                onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
+                onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                placeholder="Email"
               />
             </div>
             <div>
-              <Label htmlFor="register-username" className="text-gray-300">Логин</Label>
+              <Label className="text-red-900/80">Введите логин</Label>
               <Input 
-                id="register-username" 
-                placeholder="Введите логин" 
-                className="bg-black/40 border-secondary/30 text-white mt-2"
+                className="glass-input mt-2"
                 value={registerData.username}
-                onChange={(e) => setRegisterData({...registerData, username: e.target.value})}
+                onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
+                placeholder="Логин"
               />
             </div>
             <div>
-              <Label htmlFor="register-password" className="text-gray-300">Пароль</Label>
+              <Label className="text-red-900/80">Введите пароль</Label>
               <Input 
-                id="register-password" 
-                type="password" 
-                placeholder="Введите пароль" 
-                className="bg-black/40 border-secondary/30 text-white mt-2"
+                type="password"
+                className="glass-input mt-2"
                 value={registerData.password}
-                onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
+                onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                placeholder="Пароль"
               />
             </div>
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
             <Button 
-              className="w-full bg-primary hover:bg-primary/90 text-white"
+              className="w-full ios-button bg-red-900 hover:bg-red-800 text-white text-lg py-6"
               onClick={handleRegister}
               disabled={loading}
             >
-              {loading ? 'Регистрация...' : 'Зарегистрироваться'}
+              {loading ? 'Загрузка...' : 'Создать аккаунт'}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <DialogContent className="glass-effect border-secondary/20 text-white max-w-2xl">
+        <DialogContent className="glass-modal max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-center">Оплата подписки</DialogTitle>
-            {selectedPlan && (
-              <p className="text-center text-gray-400 mt-2">
-                Тариф: {selectedPlan.name} — {selectedPlan.price}
-              </p>
-            )}
+            <DialogTitle className="text-3xl font-bold text-center text-red-900 mb-2">Выберите способ оплаты</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 pt-4">
-            <div>
-              <h3 className="text-lg font-semibold mb-4 text-center">Выберите способ оплаты</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {['YouMoney', 'YouCassa', 'PSP', 'Sber', 'TBank', 'Крипта'].map((method) => (
-                  <Button
-                    key={method}
-                    onClick={() => handlePaymentSelect(method)}
-                    className="glass-effect border border-secondary/30 hover:bg-secondary/20 text-white h-20"
-                    variant="outline"
-                  >
-                    {method}
-                  </Button>
-                ))}
-              </div>
+            <div className="grid grid-cols-2 gap-4">
+              {['YouMoney', 'YooKassa', 'PSP', 'Sber', 'TBank', 'Крипта'].map((method) => (
+                <Button
+                  key={method}
+                  className="ios-button bg-red-900/60 hover:bg-red-800/60 text-white py-6"
+                  onClick={() => handlePaymentSelect(method)}
+                >
+                  {method}
+                </Button>
+              ))}
             </div>
-            <div>
-              <Label htmlFor="promo" className="text-gray-300">Промокод (если у вас есть)</Label>
+            
+            <div className="pt-4">
+              <Label className="text-red-900/80 mb-2 block">Промокод (если у вас он есть)</Label>
               <Input 
-                id="promo" 
-                placeholder="Введите промокод" 
-                className="bg-black/40 border-secondary/30 text-white mt-2"
+                className="glass-input"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder="Введите промокод"
               />
+            </div>
+
+            <div className="glass-card p-4 mt-4">
+              <p className="text-red-900/70 text-sm">Выбранный тариф: <span className="font-bold text-red-900">{selectedPlan?.name}</span></p>
+              <p className="text-red-900/70 text-sm">Сумма: <span className="font-bold text-red-900">{selectedPlan?.price}</span></p>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
-        <DialogContent className="glass-effect border-secondary/20 text-white max-w-md">
+        <DialogContent className="glass-modal max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-center">Личный кабинет</DialogTitle>
+            <DialogTitle className="text-3xl font-bold text-center text-red-900">Личный кабинет</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6 pt-4">
-            <div className="glass-effect p-4 rounded-xl border border-secondary/20">
-              <Label className="text-gray-400 text-sm">UID</Label>
-              <p className="text-white font-mono mt-1">{user?.uid}</p>
+          <div className="space-y-4 pt-4">
+            <div className="glass-card p-4">
+              <Label className="text-red-900/60 text-sm">UID</Label>
+              <p className="text-red-900 font-mono mt-1">{user?.uid}</p>
             </div>
             
-            <div className="glass-effect p-4 rounded-xl border border-secondary/20">
-              <Label className="text-gray-400 text-sm">Email</Label>
-              <p className="text-white mt-1">{user?.email}</p>
+            <div className="glass-card p-4">
+              <Label className="text-red-900/60 text-sm">Email</Label>
+              <p className="text-red-900 mt-1">{user?.email}</p>
             </div>
             
-            <div className="glass-effect p-4 rounded-xl border border-secondary/20">
-              <Label className="text-gray-400 text-sm">Логин</Label>
-              <p className="text-white mt-1">{user?.username}</p>
+            <div className="glass-card p-4">
+              <Label className="text-red-900/60 text-sm">Логин</Label>
+              <p className="text-red-900 mt-1">{user?.username}</p>
             </div>
             
-            <div className="glass-effect p-4 rounded-xl border border-secondary/20">
+            <div className="glass-card p-4">
               <div className="flex items-center justify-between mb-2">
-                <Label className="text-gray-400 text-sm">Пароль</Label>
+                <Label className="text-red-900/60 text-sm">Пароль</Label>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-secondary hover:text-secondary/80"
+                  onClick={() => setShowPasswordProfile(!showPasswordProfile)}
+                  className="text-sky-400 hover:text-sky-300 h-auto p-0"
                 >
-                  <Icon name={showPassword ? 'EyeOff' : 'Eye'} size={16} />
+                  {showPasswordProfile ? 'Скрыть' : 'Показать'}
                 </Button>
               </div>
-              <p className="text-white font-mono">
-                {showPassword ? '********' : '••••••••'}
+              <p className="text-red-900 font-mono">
+                {showPasswordProfile ? user?.password || '********' : '••••••••'}
               </p>
             </div>
             
-            <div className="glass-effect p-4 rounded-xl border border-secondary/20">
-              <Label className="text-gray-400 text-sm">Подписка действительна до</Label>
-              <p className="text-white mt-1">
+            <div className="glass-card p-4">
+              <Label className="text-red-900/60 text-sm">Подписка действительна до</Label>
+              <p className="text-red-900 mt-1">
                 {user?.subscription_expires_at 
                   ? new Date(user.subscription_expires_at).toLocaleDateString('ru-RU')
                   : 'Нет активной подписки'}
@@ -528,7 +504,7 @@ const Index = () => {
             </div>
 
             <Button 
-              className="w-full bg-primary/20 hover:bg-primary/30 text-white border border-primary"
+              className="w-full ios-button bg-red-900/60 hover:bg-red-800/60 text-white"
               onClick={handleLogout}
             >
               <Icon name="LogOut" size={16} className="mr-2" />

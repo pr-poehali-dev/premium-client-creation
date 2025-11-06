@@ -69,18 +69,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 password_hash = hashlib.sha256(password.encode()).hexdigest()
                 
                 cur.execute(
-                    "INSERT INTO users (uid, email, username, password_hash) VALUES (%s, %s, %s, %s) RETURNING id, uid, email, username",
+                    "INSERT INTO users (uid, email, username, password_hash) VALUES (%s, %s, %s, %s) RETURNING id, uid, email, username, subscription_expires_at",
                     (user_uid, email, username, password_hash)
                 )
                 user = cur.fetchone()
                 conn.commit()
+                
+                user_dict = dict(user)
+                user_dict['password'] = password
+                if user_dict.get('subscription_expires_at'):
+                    user_dict['subscription_expires_at'] = user_dict['subscription_expires_at'].isoformat()
                 
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({
                         'success': True,
-                        'user': dict(user)
+                        'user': user_dict
                     })
                 }
             
@@ -107,10 +112,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     return {
                         'statusCode': 401,
                         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                        'body': json.dumps({'error': 'Проверьте логин или пароль'})
+                        'body': json.dumps({'success': False, 'error': 'Проверьте логин или пароль'})
                     }
                 
                 user_dict = dict(user)
+                user_dict['password'] = password
                 if user_dict.get('subscription_expires_at'):
                     user_dict['subscription_expires_at'] = user_dict['subscription_expires_at'].isoformat()
                 
